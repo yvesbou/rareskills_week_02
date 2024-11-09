@@ -3,6 +3,7 @@
 pragma solidity 0.8.28;
 
 import {ERC721Royalty} from "@openzeppelin-contracts-5.1.0/token/ERC721/extensions/ERC721Royalty.sol";
+import {ERC721} from "@openzeppelin-contracts-5.1.0/token/ERC721/ERC721.sol";
 import {BitMaps} from "@openzeppelin-contracts-5.1.0/utils/structs/BitMaps.sol";
 import {MerkleProof} from "@openzeppelin-contracts-5.1.0/utils/cryptography/MerkleProof.sol";
 
