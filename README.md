@@ -1,3 +1,26 @@
+# Staking Ecosystem
+
+Specs
+
+- user can stake more than 1 NFT
+- if staked 3 NFTs, they can withdraw 30 tokens every day
+- rewards are paid in periods, if staked at the beginning of the period, 23h are needed to pass in order to claim
+  - thus new eligibility starts at the same time for everyone
+  - also for a user that staked 3 already
+- if withdraw they _dont_ receive pro rata
+- if NFT gets transfered, the right to claim also transfers
+
+# ERC721 onERC721Received Vulnerabilities
+
+Always check msg.sender in onERC721Received
+By default, anyone can call onERC721Received() with arbitrary parameters, fooling the contract into thinking it has received an NFT it doesn’t have. If your contract uses onERC721Received(), you must check that msg.sender is the NFT contract you expect!
+
+safeTransfer reentrancy
+SafeTransfer and \_safeMint hand execution control over to an external contract. Be careful when using safeTransfer to send an NFT to an arbitrary address, the receiver can put any logic they like the onERC721Received() function, possibly leading to reentrancy. If you properly defend against reentrancy, this does not need to be a concern.
+
+safeTransfer denial of service
+A malicious receiver can forcibly revert transactions by reverting inside onERC721Received() or by using a loop to consume all the gas. You should not assume that safeTransferFrom to an arbitrary address will succeed.
+
 ## Foundry with Soldeer Template
 
 ```shell
