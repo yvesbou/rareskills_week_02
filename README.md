@@ -4,11 +4,6 @@ Specs
 
 - user can stake more than 1 NFT
 - if staked 3 NFTs, they can withdraw 30 tokens every day
-- rewards are paid in periods, if staked at the beginning of the period, 23h are needed to pass in order to claim
-  - thus new eligibility starts at the same time for everyone
-  - also for a user that staked 3 already
-- if withdraw they _dont_ receive pro rata
-- if NFT gets transfered, the right to claim also transfers
 
 # ERC721 onERC721Received Vulnerabilities
 
