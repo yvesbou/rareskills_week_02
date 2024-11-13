@@ -13,39 +13,50 @@ import {IERC20} from "@openzeppelin-contracts-5.1.0/token/ERC20/IERC20.sol";
 contract Staking is IERC721Receiver {
     IERC721 private stakingNFToken;
     RewardToken private rewardToken;
-    uint256 private constant REWARD_PRECISION = 18;
 
-    uint256 public START_STAKING;
-    uint256 public constant EPOCH_DURATION = 86_400; // 60*60*24 = 1 day in sec
+    uint256 public totalSupply = 0;
+    uint256 public START_TIME_STAKING; // unix timestamp
+    uint256 public constant EPOCH_DURATION = 1 days;
+    uint256 public constant REWARD_RATE = 10 ** 19; // 10 token per day
 
-    mapping(uint256 tokenId => uint256 stakedTime) tokenToTime;
-    mapping(uint256 tokenId => address depositor) tokenToDepositor; // this allows to stake multiple tokens
-    mapping(uint256 tokenId => mapping(uint256 epoch => bool claimed)) yieldClaimedByTokenByEpoch;
+    uint256 public periodFinished = 0;
+    uint256 public lastUpdateTime = 0;
+    uint256 public cumulativeRewardPerToken = 0;
+
+    mapping(uint256 tokenId => uint256 cumulativeReward) tokenTolastUpdateCumulativeReward;
+    mapping(uint256 tokenId => uint256 unclaimed) tokenToUnclaimedYield;
+    mapping(uint256 tokenId => address depositor) tokenToDepositor; // this allows to stake multiple tokens (needed since transferred)
 
     error AlreadyClaimedYield();
     error NotCorrectNFT();
     error NotEligibleForYield(uint256 tokenId, address claimer);
 
+    event YieldClaim(address indexed user, uint256 indexed tokenId, uint256 indexed amount);
+
     constructor(address addressStakingToken) {
-        START_STAKING = block.timestamp;
+        START_TIME_STAKING = block.timestamp;
         stakingNFToken = IERC721(addressStakingToken);
         rewardToken = new RewardToken("RewardToken", "RT"); // staking contract is owner
     }
 
+    /// @notice A user can claim yield for a specific tokenId he/she deposited
+    /// @dev Udpates the global state and tokenId specific state ()
+    /// @param tokenId the nft for which the user wants to claim yield
     function claimYield(uint256 tokenId) external {
         // check if user is eligible
         address depositor = tokenToDepositor[tokenId];
         if (msg.sender != depositor) revert NotEligibleForYield(tokenId, msg.sender);
 
-        // check if user already claimed for this period
-        uint256 epoch = getCurrentEpoch();
-        if (yieldClaimedByTokenByEpoch[tokenId][epoch]) revert AlreadyClaimedYield();
-
-        // set to claimed
-        yieldClaimedByTokenByEpoch[tokenId][epoch] = true;
+        _updateGlobalRewardState();
+        _computeReward(tokenId);
 
         // mint tokens to user
-        rewardToken.mint(msg.sender, 10 ** REWARD_PRECISION);
+        rewardToken.mint(msg.sender, tokenToUnclaimedYield[tokenId]);
+        uint256 yield = tokenToUnclaimedYield[tokenId];
+        tokenToUnclaimedYield[tokenId] = 0;
+
+        // emit an event
+        emit YieldClaim(msg.sender, tokenId, yield);
     }
 
     function onERC721Received(address operator, address from, uint256 id, bytes calldata data)
@@ -55,31 +66,47 @@ contract Staking is IERC721Receiver {
         // important safety to check only allow calls from our intended NFT
         if (msg.sender != address(stakingNFToken)) revert NotCorrectNFT();
 
-        // uint8 voteId = abi.decode(data, (uint8));
+        _updateGlobalRewardState();
+        tokenToUnclaimedYield[id] = cumulativeRewardPerToken;
+
         tokenToDepositor[id] = from; // from is the original owner
-        tokenToTime[id] = block.timestamp;
         return IERC721Receiver.onERC721Received.selector;
     }
 
     function stake(uint256 tokenId) external {
-        // CEI pattern
-        // checks
-
-        // interactions
-        // using safeTransferFrom makes sure that if the transfer fails, the tx reverts
-        // this fails if the msg.sender doesnt own the token
-        // requires approve
-        stakingNFToken.safeTransferFrom(msg.sender, address(this), tokenId);
+        _updateGlobalRewardState();
+        tokenTolastUpdateCumulativeReward[tokenId] = cumulativeRewardPerToken; // initiate with the current state (otherwise instant yield available)
 
         // effects
-        tokenToTime[tokenId] = block.timestamp;
+        tokenToDepositor[tokenId] = msg.sender; // from is the original owner
+
+        // requires approve
+        stakingNFToken.safeTransferFrom(msg.sender, address(this), tokenId);
     }
 
     function unstake() external {}
 
-    function getCurrentEpoch() private view returns (uint256) {
-        uint256 difference = block.timestamp - START_STAKING;
-        uint256 daysPassed = difference / EPOCH_DURATION; // assume integer division
-        return daysPassed;
+    // only update rewardPerToken and not lastUpdateTime (as it can have many tokens)
+    // do update on time factor after updateRewards was called for every token
+    function _updateGlobalRewardState() internal {
+        cumulativeRewardPerToken = _computeNewAccruedRewardPerToken();
+        lastUpdateTime = block.timestamp;
+    }
+
+    /// @notice updates the unclaimed yield for a staked nft
+    /// @notice updates the total reward for a single nft based on the current timestamp
+    /// @dev called after `_updateGlobalRewardState()`
+    /// @param tokenId the nft for which book-keeping is updated
+    function _computeReward(uint256 tokenId) internal {
+        // get difference between updated global accrual and prev value for tokenId
+        uint256 diff = cumulativeRewardPerToken - tokenTolastUpdateCumulativeReward[tokenId];
+        // update latest update for particular nft
+        tokenTolastUpdateCumulativeReward[tokenId] = cumulativeRewardPerToken;
+        // new unclaimed yield based on new global state (time based accrual)
+        tokenToUnclaimedYield[tokenId] += diff;
+    }
+
+    function _computeNewAccruedRewardPerToken() internal view returns (uint256) {
+        return cumulativeRewardPerToken + ((block.timestamp - lastUpdateTime) * REWARD_RATE * 1e18) / totalSupply;
     }
 }
