@@ -17,7 +17,7 @@ contract Overmint2 is ERC721 {
         _mint(msg.sender, totalSupply);
     }
 
-    function success() external view returns (bool) {
-        return balanceOf(msg.sender) == 5;
+    function success(address account) external view returns (bool) {
+        return balanceOf(account) == 5;
     }
 }
