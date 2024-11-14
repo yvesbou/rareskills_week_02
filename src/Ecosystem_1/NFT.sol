@@ -45,7 +45,7 @@ contract NFT is ERC721Royalty {
         BitMaps.setTo(_claimStatus, index, true);
 
         // mint
-        _safeMint(msg.sender, amount); // where is the discount though?
+        _safeMint(msg.sender, amount);
     }
 
     function _verifyProof(bytes32[] calldata proof, address claimer, uint256 index, uint256 amount) private view {
