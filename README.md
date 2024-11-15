@@ -1,10 +1,5 @@
 # Staking Ecosystem
 
-Specs
-
-- user can stake more than 1 NFT
-- if staked 3 NFTs, they can withdraw 30 tokens every day
-
 # ERC721 onERC721Received Vulnerabilities
 
 Always check msg.sender in onERC721Received
