@@ -40,12 +40,12 @@ contract NFT is ReentrancyGuard, ERC721Royalty, Ownable2Step {
         _safeMint(msg.sender, _tokenIdCounter);
     }
 
-    function mintWithDiscount(bytes32[] calldata proof, uint256 index, uint256 amount) external payable {
+    function mintWithDiscount(bytes32[] calldata proof, uint256 index) external payable {
         // check if already claimed
         if (BitMaps.get(_claimStatus, index)) revert AlreadyClaimed();
 
         // verify proof address, index, amount
-        _verifyProof(proof, msg.sender, index, amount);
+        _verifyProof(proof, msg.sender, index);
 
         if (msg.value < 1 ether) revert NotEnoughPaid(); // 50% discount
 
@@ -53,7 +53,7 @@ contract NFT is ReentrancyGuard, ERC721Royalty, Ownable2Step {
         BitMaps.setTo(_claimStatus, index, true);
 
         // mint
-        _safeMint(msg.sender, amount);
+        _safeMint(msg.sender, index);
 
         emit MintWithDiscount(msg.sender, index);
     }
