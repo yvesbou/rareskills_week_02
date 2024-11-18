@@ -23,13 +23,14 @@ contract NFTPresaleTest is Test {
 
     function setUp() public {
         vm.deal(user1, 5 ether);
+        vm.deal(user2, 5 ether);
 
         vm.startPrank(owner);
         nft = new NFT("NFT", "NF", merkleRoot);
         vm.stopPrank();
     }
 
-    function testClaim() public {
+    function testClaimWithProof() public {
         // proof for user 1
         // proof generated in ./merkle-tree/createProof.ts
         bytes32[] memory proof = new bytes32[](3);
@@ -38,6 +39,22 @@ contract NFTPresaleTest is Test {
         proof[2] = 0x6428a1d5194389c85395dbcdb092f07236e0e99e35bf17204440c264e516376f;
 
         vm.prank(user1);
+        nft.mintWithDiscount{value: 1 ether}(proof, 0);
+
+        assertEq(nft.ownerOf(0), user1);
+    }
+
+    function testClaimWithProofFalseWallet() public {
+        // proof for user 1
+        // proof generated in ./merkle-tree/createProof.ts
+        bytes32[] memory proof = new bytes32[](3);
+        proof[0] = 0x3cc8c05c9ef6c07ca8d9a4d612a704f41724f0413a72ab2140b896b696b8deb7;
+        proof[1] = 0x6f35e1ec2098b7f0b2c540e60bb67981702c548ec448988ab6443f7994f05b86;
+        proof[2] = 0x6428a1d5194389c85395dbcdb092f07236e0e99e35bf17204440c264e516376f;
+
+        // false user tries to claim
+        vm.prank(user2);
+        vm.expectRevert();
         nft.mintWithDiscount{value: 1 ether}(proof, 0);
     }
 }
