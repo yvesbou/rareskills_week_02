@@ -16,3 +16,15 @@ for (const [i, v] of tree.entries()) {
     console.log("Proof:", proof);
   }
 }
+
+/**
+ 
+logged: 
+
+Value: [ "0x0000000000000000000000000000000000000010", "0" ]
+Proof: [
+  "0x3cc8c05c9ef6c07ca8d9a4d612a704f41724f0413a72ab2140b896b696b8deb7",
+  "0x6f35e1ec2098b7f0b2c540e60bb67981702c548ec448988ab6443f7994f05b86",
+  "0x6428a1d5194389c85395dbcdb092f07236e0e99e35bf17204440c264e516376f"
+]
+ */
