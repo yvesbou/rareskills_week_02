@@ -3,20 +3,27 @@
 pragma solidity 0.8.28;
 
 import {ERC721Royalty} from "@openzeppelin-contracts-5.1.0/token/ERC721/extensions/ERC721Royalty.sol";
+import {Ownable2Step, Ownable} from "@openzeppelin-contracts-5.1.0/access/Ownable2Step.sol";
 import {ERC721} from "@openzeppelin-contracts-5.1.0/token/ERC721/ERC721.sol";
 import {BitMaps} from "@openzeppelin-contracts-5.1.0/utils/structs/BitMaps.sol";
 import {MerkleProof} from "@openzeppelin-contracts-5.1.0/utils/cryptography/MerkleProof.sol";
+import {ReentrancyGuard} from "@openzeppelin-contracts-5.1.0/utils/ReentrancyGuard.sol";
 
-contract NFT is ERC721Royalty {
+contract NFT is ReentrancyGuard, ERC721Royalty, Ownable2Step {
     uint256 private _tokenIdCounter = 8; // the first 8 ids (0,...7) are for merkletree
     bytes32 public merkleRoot;
     BitMaps.BitMap private _claimStatus;
+
+    event WithdrawalCompleted(address indexed owner, uint256 indexed amount);
 
     error AlreadyClaimed();
     error NotEnoughPaid();
     error MaxSupplyReached();
 
-    constructor(string memory name_, string memory symbol_, bytes32 merkleRoot_) ERC721(name_, symbol_) {
+    constructor(string memory name_, string memory symbol_, bytes32 merkleRoot_)
+        ERC721(name_, symbol_)
+        Ownable(msg.sender)
+    {
         _setDefaultRoyalty(msg.sender, 250);
         merkleRoot = merkleRoot_;
     }
@@ -51,5 +58,13 @@ contract NFT is ERC721Royalty {
     function _verifyProof(bytes32[] calldata proof, address claimer, uint256 index, uint256 amount) private view {
         bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(claimer, index, amount))));
         require(MerkleProof.verify(proof, merkleRoot, leaf));
+    }
+
+    function claimSales() external nonReentrant onlyOwner {
+        uint256 collected = address(this).balance;
+        (bool success,) = payable(msg.sender).call{value: collected}("");
+        require(success, "Transfer failed");
+
+        emit WithdrawalCompleted(msg.sender, collected);
     }
 }
