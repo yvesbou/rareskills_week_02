@@ -14,6 +14,7 @@ contract NFT is ReentrancyGuard, ERC721Royalty, Ownable2Step {
     bytes32 public merkleRoot;
     BitMaps.BitMap private _claimStatus;
 
+    event MintWithDiscount(address indexed user, uint256 indexed index);
     event WithdrawalCompleted(address indexed owner, uint256 indexed amount);
 
     error AlreadyClaimed();
@@ -53,6 +54,8 @@ contract NFT is ReentrancyGuard, ERC721Royalty, Ownable2Step {
 
         // mint
         _safeMint(msg.sender, amount);
+
+        emit MintWithDiscount(msg.sender, index);
     }
 
     function _verifyProof(bytes32[] calldata proof, address claimer, uint256 index, uint256 amount) private view {
