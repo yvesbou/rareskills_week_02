@@ -8,5 +8,7 @@
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
-  "dependencies": { "@openzeppelin/merkle-tree": "^1.0.7" }
+  "dependencies": {
+    "@openzeppelin/merkle-tree": "^1.0.7"
+  }
 }
