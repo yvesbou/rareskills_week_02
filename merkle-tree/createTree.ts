@@ -1,7 +1,7 @@
 import { StandardMerkleTree } from "@openzeppelin/merkle-tree";
 import fs from "fs";
 
-// (1)
+// (1) list of the beneficiaries
 const values = [
   ["0x0000000000000000000000000000000000000010", "0"],
   ["0x0000000000000000000000000000000000000020", "1"],
@@ -13,7 +13,7 @@ const values = [
   ["0x0000000000000000000000000000000000000080", "7"],
 ];
 
-// (2)
+// (2) use the OZ library for creating the tree
 const tree = StandardMerkleTree.of(values, ["address", "uint256"]);
 
 // (3)
