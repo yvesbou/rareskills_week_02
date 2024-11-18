@@ -19,5 +19,5 @@ bun run createTree.ts
 User needs to submit a proof to claim token:
 
 ```bash
-bun run createTree.ts
+bun run createProof.ts
 ```
