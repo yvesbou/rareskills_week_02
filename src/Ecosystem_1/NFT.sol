@@ -58,8 +58,8 @@ contract NFT is ReentrancyGuard, ERC721Royalty, Ownable2Step {
         emit MintWithDiscount(msg.sender, index);
     }
 
-    function _verifyProof(bytes32[] calldata proof, address claimer, uint256 index, uint256 amount) private view {
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(claimer, index, amount))));
+    function _verifyProof(bytes32[] calldata proof, address claimer, uint256 index) private view {
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(claimer, index))));
         require(MerkleProof.verify(proof, merkleRoot, leaf));
     }
 
