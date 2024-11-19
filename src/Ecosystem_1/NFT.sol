@@ -10,7 +10,7 @@ import {MerkleProof} from "@openzeppelin-contracts-5.1.0/utils/cryptography/Merk
 import {ReentrancyGuard} from "@openzeppelin-contracts-5.1.0/utils/ReentrancyGuard.sol";
 
 contract NFT is ReentrancyGuard, ERC721Royalty, Ownable2Step {
-    uint256 private _tokenIdCounter = 8; // the first 8 ids (0,...7) are for merkletree
+    uint256 private _tokenIdCounter = 7; // the first 8 ids (0,...7) are for merkletree
     bytes32 public merkleRoot;
     BitMaps.BitMap private _claimStatus;
 
