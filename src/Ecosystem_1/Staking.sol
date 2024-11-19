@@ -11,7 +11,7 @@ import {IERC721Receiver} from "@openzeppelin-contracts-5.1.0/token/ERC721/IERC72
 // NFT stakers can withdraw 10 ERC20 tokens every 24h
 contract Staking is IERC721Receiver {
     IERC721 private stakingNFToken;
-    RewardToken private rewardToken;
+    RewardToken public rewardToken;
 
     uint256 public totalSupply = 0;
     uint256 public START_TIME_STAKING; // unix timestamp
@@ -74,9 +74,11 @@ contract Staking is IERC721Receiver {
         if (msg.sender != address(stakingNFToken)) revert NotCorrectNFT();
 
         _updateGlobalRewardState();
+        totalSupply += 1;
         tokenToUnclaimedYield[id] = cumulativeRewardPerToken;
 
         tokenToDepositor[id] = from; // from is the original owner
+        emit TokenStaked(from, id);
         return IERC721Receiver.onERC721Received.selector;
     }
 
@@ -89,7 +91,7 @@ contract Staking is IERC721Receiver {
 
         // effects
         tokenToDepositor[tokenId] = msg.sender; // from is the original owner
-
+        totalSupply += 1;
         // requires approve & fails if the user doesnt own it
         stakingNFToken.safeTransferFrom(msg.sender, address(this), tokenId);
 
@@ -101,7 +103,7 @@ contract Staking is IERC721Receiver {
     /// @param tokenId the nft that is un-staked
     function unstake(uint256 tokenId) external {
         claimYield(tokenId);
-
+        totalSupply -= 1;
         stakingNFToken.safeTransferFrom(address(this), msg.sender, tokenId);
     }
 
@@ -129,6 +131,7 @@ contract Staking is IERC721Receiver {
     /// @dev only uses global (not-user specific) state variables
     /// @return the new total accrued reward that is claimable for each deposited nft since day 1
     function _computeNewAccruedRewardPerToken() internal view returns (uint256) {
+        if (totalSupply == 0) return cumulativeRewardPerToken;
         return cumulativeRewardPerToken + ((block.timestamp - lastUpdateTime) * REWARD_RATE * 1e18) / totalSupply;
     }
 }
