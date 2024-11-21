@@ -31,6 +31,7 @@ contract StakingTest is Test {
         vm.stopPrank();
     }
 
+    /// only with one user, yield after 1 days
     function testStakeNFTAndReceiveYield() public {
         uint256 beforeReward = token.balanceOf(user1);
         assertEq(beforeReward, 0);
@@ -56,5 +57,87 @@ contract StakingTest is Test {
 
         uint256 receivedReward = token.balanceOf(user1);
         assertEq(receivedReward, 1e19);
+    }
+
+    /// only with one user, yield after 2 days
+    function testStakeNFTAndReceiveYieldAfterTwoDays() public {
+        uint256 beforeReward = token.balanceOf(user1);
+        assertEq(beforeReward, 0);
+
+        uint256 tokenIdOfUser1 = 8;
+        vm.prank(user1);
+        nft.mint{value: 2 ether}(); // normal mint
+
+        vm.prank(user1); // gas saving directly sending the nft to the contract
+        nft.safeTransferFrom(user1, address(staking), tokenIdOfUser1); // first id for normal sale is 8
+
+        // assert that the staking contract states have changed
+        uint256 totalStaked = staking.totalSupply();
+        assertEq(totalStaked, 1);
+        // warp into the future and check if staking rewards accrued
+        vm.warp(block.timestamp + 2 days);
+
+        vm.prank(user1);
+        staking.unstake(tokenIdOfUser1);
+
+        totalStaked = staking.totalSupply();
+        assertEq(totalStaked, 0);
+
+        uint256 receivedReward = token.balanceOf(user1);
+        assertEq(receivedReward, 2e19);
+    }
+
+    /// 2 users
+    /// stake at the same time
+    /// 1 day later, both have 10 tokens each
+    function testTwoUserStakeFor1Day() public {
+        uint256 tokenIdOfUser1 = 8;
+        uint256 tokenIdOfUser2 = 9;
+
+        /// buying NFT ///
+        // user 1
+        vm.prank(user1);
+        nft.mint{value: 2 ether}(); // normal mint
+
+        // user 2
+        vm.prank(user2);
+        nft.mint{value: 2 ether}(); // normal mint
+        //////////////////
+
+        ////// stake //////
+        // user 1
+        vm.prank(user1); // gas saving directly sending the nft to the contract
+        nft.safeTransferFrom(user1, address(staking), tokenIdOfUser1); // first id for normal sale is 8
+
+        // user 2
+        vm.prank(user2); // gas saving directly sending the nft to the contract
+        nft.safeTransferFrom(user2, address(staking), tokenIdOfUser2); // first id for normal sale is 8
+        //////////////////
+
+        // assert that the staking contract states have changed
+        uint256 totalStaked = staking.totalSupply();
+        assertEq(totalStaked, 2);
+        // warp into the future and check if staking rewards accrued
+        vm.warp(block.timestamp + 1 days);
+
+        //// un-stake ////
+        // user 1
+        vm.prank(user1);
+        staking.unstake(tokenIdOfUser1);
+        // user 2
+        vm.prank(user2);
+        staking.unstake(tokenIdOfUser2);
+        //////////////////
+
+        totalStaked = staking.totalSupply();
+        assertEq(totalStaked, 0);
+
+        /// assert ///
+        // user 1
+        uint256 receivedRewardUser1 = token.balanceOf(user1);
+        assertEq(receivedRewardUser1, 1e19);
+        // user 2
+        uint256 receivedRewardUser2 = token.balanceOf(user2);
+        assertEq(receivedRewardUser2, 1e19);
     }
 }
