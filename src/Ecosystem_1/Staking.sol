@@ -28,6 +28,7 @@ contract Staking is IERC721Receiver {
 
     error AlreadyClaimedYield();
     error NotCorrectNFT();
+    error NotAuthorisedForNFT();
     error NotEligibleForYield(uint256 tokenId, address claimer);
 
     event TokenStaked(address indexed user, uint256 indexed tokenId);
@@ -73,11 +74,12 @@ contract Staking is IERC721Receiver {
         // important safety to check only allow calls from our intended NFT
         if (msg.sender != address(stakingNFToken)) revert NotCorrectNFT();
 
+        // effects
         _updateGlobalRewardState();
-        totalSupply += 1;
-        tokenToUnclaimedYield[id] = cumulativeRewardPerToken;
-
+        tokenTolastUpdateCumulativeReward[id] = cumulativeRewardPerToken;
         tokenToDepositor[id] = from; // from is the original owner
+        totalSupply += 1;
+
         emit TokenStaked(from, id);
         return IERC721Receiver.onERC721Received.selector;
     }
@@ -102,10 +104,20 @@ contract Staking is IERC721Receiver {
     /// @dev claims yield before unstaking, since the user would loose access if the nft was sold afterwards
     /// @param tokenId the nft that is un-staked
     function unstake(uint256 tokenId) external {
-        claimYield(tokenId);
+        if (msg.sender != tokenToDepositor[tokenId]) {
+            revert NotAuthorisedForNFT();
+        }
+
+        claimYield(tokenId); // not using safeMint
+
         totalSupply -= 1;
+        delete tokenToDepositor[tokenId];
+        delete tokenTolastUpdateCumulativeReward[tokenId];
+
         stakingNFToken.safeTransferFrom(address(this), msg.sender, tokenId);
     }
+
+    function getCurrentYield(uint256 tokenId) external returns (uint256) {}
 
     /// @notice Updates the global state for book-keeping
     /// @dev `_computeNewAccruedRewardPerToken` uses REWARD_RATE
@@ -132,6 +144,7 @@ contract Staking is IERC721Receiver {
     /// @return the new total accrued reward that is claimable for each deposited nft since day 1
     function _computeNewAccruedRewardPerToken() internal view returns (uint256) {
         if (totalSupply == 0) return cumulativeRewardPerToken;
-        return cumulativeRewardPerToken + ((block.timestamp - lastUpdateTime) * REWARD_RATE * 1e18) / totalSupply;
+        return cumulativeRewardPerToken
+            + (((block.timestamp - lastUpdateTime) / EPOCH_DURATION) * REWARD_RATE) / totalSupply;
     }
 }
