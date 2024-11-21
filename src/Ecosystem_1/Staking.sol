@@ -14,11 +14,9 @@ contract Staking is IERC721Receiver {
     RewardToken public rewardToken;
 
     uint256 public totalSupply = 0;
-    uint256 public START_TIME_STAKING; // unix timestamp
     uint256 public constant EPOCH_DURATION = 1 days;
     uint256 public constant REWARD_RATE = 10 ** 19; // 10 token per day
 
-    uint256 public periodFinished = 0;
     uint256 public lastUpdateTime = 0;
     uint256 public cumulativeRewardPerToken = 0;
 
@@ -35,7 +33,6 @@ contract Staking is IERC721Receiver {
     event YieldClaim(address indexed user, uint256 indexed tokenId, uint256 indexed amount);
 
     constructor(address addressStakingToken) {
-        START_TIME_STAKING = block.timestamp;
         stakingNFToken = IERC721(addressStakingToken);
         rewardToken = new RewardToken("RewardToken", "RT"); // staking contract is owner
     }
@@ -52,7 +49,7 @@ contract Staking is IERC721Receiver {
         _computeReward(tokenId);
 
         // mint tokens to user
-        rewardToken.mint(msg.sender, tokenToUnclaimedYield[tokenId]);
+        rewardToken.mint(msg.sender, tokenToUnclaimedYield[tokenId]); // not safe mint & own implementation
         uint256 yield = tokenToUnclaimedYield[tokenId];
         tokenToUnclaimedYield[tokenId] = 0;
 
@@ -94,6 +91,8 @@ contract Staking is IERC721Receiver {
         // effects
         tokenToDepositor[tokenId] = msg.sender; // from is the original owner
         totalSupply += 1;
+
+        // interactions
         // requires approve & fails if the user doesnt own it
         stakingNFToken.safeTransferFrom(msg.sender, address(this), tokenId);
 
