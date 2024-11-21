@@ -144,6 +144,6 @@ contract Staking is IERC721Receiver {
     /// @return the new total accrued reward that is claimable for each deposited nft since day 1
     function _computeNewAccruedRewardPerToken() internal view returns (uint256) {
         if (totalSupply == 0) return cumulativeRewardPerToken;
-        return cumulativeRewardPerToken + (((block.timestamp - lastUpdateTime) / EPOCH_DURATION) * REWARD_RATE); // divide by totalSupply if a total allocation should be distributed
+        return cumulativeRewardPerToken + (((block.timestamp - lastUpdateTime)) * REWARD_RATE / EPOCH_DURATION); // divide by totalSupply if a total allocation should be distributed
     }
 }

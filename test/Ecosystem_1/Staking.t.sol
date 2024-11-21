@@ -87,6 +87,34 @@ contract StakingTest is Test {
         assertEq(receivedReward, 2e19);
     }
 
+    /// only with one user, yield after 0.5 days
+    function testStakeNFTAndReceiveYieldAfterHalfADay() public {
+        uint256 beforeReward = token.balanceOf(user1);
+        assertEq(beforeReward, 0);
+
+        uint256 tokenIdOfUser1 = 8;
+        vm.prank(user1);
+        nft.mint{value: 2 ether}(); // normal mint
+
+        vm.prank(user1); // gas saving directly sending the nft to the contract
+        nft.safeTransferFrom(user1, address(staking), tokenIdOfUser1); // first id for normal sale is 8
+
+        // assert that the staking contract states have changed
+        uint256 totalStaked = staking.totalSupply();
+        assertEq(totalStaked, 1);
+        // warp into the future and check if staking rewards accrued
+        vm.warp(block.timestamp + 43_200);
+
+        vm.prank(user1);
+        staking.unstake(tokenIdOfUser1);
+
+        totalStaked = staking.totalSupply();
+        assertEq(totalStaked, 0);
+
+        uint256 receivedReward = token.balanceOf(user1);
+        assertEq(receivedReward, 5e18);
+    }
+
     /// 2 users
     /// stake at the same time
     /// 1 day later, both have 10 tokens each
@@ -140,4 +168,6 @@ contract StakingTest is Test {
         uint256 receivedRewardUser2 = token.balanceOf(user2);
         assertEq(receivedRewardUser2, 1e19);
     }
+
+    /// user stakes and withdraws after 0.5 days
 }
