@@ -34,7 +34,7 @@ contract NFT is ReentrancyGuard, ERC721Royalty, Ownable2Step {
      * - merkle tree stored to have claims
      */
     function mint() external payable {
-        if (msg.value < 2 ether) revert NotEnoughPaid();
+        if (msg.value < 2 ether) revert NotEnoughPaid(); // neat, not including extra logic, but let the user be mindful
         _tokenIdCounter++;
         if (_tokenIdCounter == 1000) revert MaxSupplyReached();
         _safeMint(msg.sender, _tokenIdCounter);

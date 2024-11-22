@@ -98,7 +98,7 @@ contract Staking is IERC721Receiver {
 
         // interactions
         // requires approve & fails if the user doesnt own it
-        stakingNFToken.safeTransferFrom(msg.sender, address(this), tokenId);
+        stakingNFToken.transferFrom(msg.sender, address(this), tokenId); // don't use safeTransferFrom (transferring to this contract, would invoke the hook leading to double accounting)
 
         emit TokenStaked(msg.sender, tokenId);
     }
@@ -116,6 +116,7 @@ contract Staking is IERC721Receiver {
         totalSupply -= 1;
         delete tokenToDepositor[tokenId];
         delete tokenTolastUpdateCumulativeReward[tokenId];
+        delete tokenToUnclaimedYield[tokenId];
 
         stakingNFToken.safeTransferFrom(address(this), msg.sender, tokenId);
 
