@@ -17,22 +17,26 @@ contract Staking is IERC721Receiver {
     uint256 public constant EPOCH_DURATION = 1 days;
     uint256 public constant REWARD_RATE = 10 ** 19; // 10 token per day
 
-    uint256 public lastUpdateTime = 0;
+    uint256 public lastUpdateTime;
     uint256 public cumulativeRewardPerToken = 0;
 
     mapping(uint256 tokenId => uint256 cumulativeReward) tokenTolastUpdateCumulativeReward;
     mapping(uint256 tokenId => uint256 unclaimed) tokenToUnclaimedYield;
     mapping(uint256 tokenId => address depositor) tokenToDepositor; // this allows to stake multiple tokens (needed since transferred)
 
+    error InvalidAddress();
     error AlreadyClaimedYield();
     error NotCorrectNFT();
     error NotAuthorisedForNFT();
     error NotEligibleForYield(uint256 tokenId, address claimer);
 
     event TokenStaked(address indexed user, uint256 indexed tokenId);
-    event YieldClaim(address indexed user, uint256 indexed tokenId, uint256 indexed amount);
+    event TokenUnstaked(address indexed user, uint256 indexed tokenId);
+    event ClaimedYield(address indexed user, uint256 indexed tokenId, uint256 indexed amount);
 
     constructor(address addressStakingToken) {
+        if (addressStakingToken == address(0)) revert InvalidAddress();
+        lastUpdateTime = block.timestamp;
         stakingNFToken = IERC721(addressStakingToken);
         rewardToken = new RewardToken("RewardToken", "RT"); // staking contract is owner
     }
@@ -54,17 +58,20 @@ contract Staking is IERC721Receiver {
         tokenToUnclaimedYield[tokenId] = 0;
 
         // emit an event
-        emit YieldClaim(msg.sender, tokenId, yield);
+        emit ClaimedYield(msg.sender, tokenId, yield);
     }
 
     /// @notice Explain to an end user what this does
     /// @dev Explain to a developer any extra details
-    /// @dev data is no handled
     /// @param operator the account that executed the transfer to the staking account
     /// @param from the account that spended the nft
     /// @param id the identifier of the nft
+    /// @param data is no handled
     /// @return the onERC721Received.selector (4 bytes)
-    function onERC721Received(address operator, address from, uint256 id) external returns (bytes4) {
+    function onERC721Received(address operator, address from, uint256 id, bytes calldata data)
+        external
+        returns (bytes4)
+    {
         // important safety to check only allow calls from our intended NFT
         if (msg.sender != address(stakingNFToken)) revert NotCorrectNFT();
 
@@ -111,6 +118,8 @@ contract Staking is IERC721Receiver {
         delete tokenTolastUpdateCumulativeReward[tokenId];
 
         stakingNFToken.safeTransferFrom(address(this), msg.sender, tokenId);
+
+        emit TokenUnstaked(msg.sender, tokenId);
     }
 
     /// @notice Updates the global state for book-keeping
