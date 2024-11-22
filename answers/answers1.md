@@ -8,6 +8,8 @@ The gas savings are motivated by mitigating the immense gas costs at the launch 
 
 ### 1. remove duplicate storage
 
+??
+
 ### 2. update balance of user at the end of the batch
 
 If a user wants to buy 5 NFTs more, the storage is updated each time (5 times), going from 0 owned to 1 owned, and then from 1 owned to 2 owned, but all the the values are only transient. One can directly increment from 0 to 5 instead of re-writing to storage over and over again.
