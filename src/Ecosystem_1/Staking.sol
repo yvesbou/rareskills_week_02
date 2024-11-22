@@ -20,6 +20,7 @@ contract Staking is IERC721Receiver {
     uint256 public lastUpdateTime;
     uint256 public cumulativeRewardPerToken = 0;
 
+    // consider making a struct
     mapping(uint256 tokenId => uint256 cumulativeReward) tokenTolastUpdateCumulativeReward;
     mapping(uint256 tokenId => uint256 unclaimed) tokenToUnclaimedYield;
     mapping(uint256 tokenId => address depositor) tokenToDepositor; // this allows to stake multiple tokens (needed since transferred)
