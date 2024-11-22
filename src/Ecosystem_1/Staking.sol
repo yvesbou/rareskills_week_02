@@ -59,15 +59,12 @@ contract Staking is IERC721Receiver {
 
     /// @notice Explain to an end user what this does
     /// @dev Explain to a developer any extra details
+    /// @dev data is no handled
     /// @param operator the account that executed the transfer to the staking account
     /// @param from the account that spended the nft
     /// @param id the identifier of the nft
-    /// @param data ???
     /// @return the onERC721Received.selector (4 bytes)
-    function onERC721Received(address operator, address from, uint256 id, bytes calldata data)
-        external
-        returns (bytes4)
-    {
+    function onERC721Received(address operator, address from, uint256 id) external returns (bytes4) {
         // important safety to check only allow calls from our intended NFT
         if (msg.sender != address(stakingNFToken)) revert NotCorrectNFT();
 
@@ -115,8 +112,6 @@ contract Staking is IERC721Receiver {
 
         stakingNFToken.safeTransferFrom(address(this), msg.sender, tokenId);
     }
-
-    function getCurrentYield(uint256 tokenId) external returns (uint256) {}
 
     /// @notice Updates the global state for book-keeping
     /// @dev `_computeNewAccruedRewardPerToken` uses REWARD_RATE
